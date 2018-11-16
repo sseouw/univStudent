@@ -1,0 +1,177 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <malloc.h>
+
+typedef int Element;
+
+typedef struct tListNode
+{
+	Element data;
+	struct tListNode *next;
+} ListNode;
+
+typedef struct
+{
+	int  count;
+	ListNode *head;
+	ListNode * pos;
+} List;
+
+List *createList()
+{
+	List *pNewList = (List*)malloc(sizeof(List));
+
+	if (pNewList == NULL)
+		return NULL;
+
+	pNewList->count = 0;
+	pNewList->head = NULL;
+	return pNewList;
+}
+
+void Insert(List* pList, Element item)
+{
+	ListNode* pLoc = pList->head;
+	ListNode* pPre = pList->head;
+
+
+	ListNode *pNewNode = (ListNode*)malloc(sizeof(ListNode));
+	pNewNode->data = item;
+
+	if (pLoc == NULL)
+	{
+		pNewNode->next = pList->head;
+		pList->head = pNewNode;
+		(pList->count)++;
+		return;
+	}
+
+	while (pLoc != NULL)
+	{
+		if (pLoc->data > item)break;
+		pPre = pLoc;
+		pLoc = pLoc->next;
+	}
+	pNewNode->next= pLoc;
+	pPre->next = pNewNode;
+	(pList->count)++;
+}
+
+bool search(List * pList, Element data)
+{
+	ListNode* pPre;
+	pPre = pList->head;
+
+	while (pPre != NULL)
+	{
+		if (pPre->data == data)
+			return 1;
+
+		pPre = pPre->next;
+	}
+	return 0;
+}
+void remove(List* pList, Element data)
+{
+	ListNode*pPre = pList->head, *pLoc = pList->head;
+
+	if (pList->count == 0)
+		return;
+
+	while (pPre != NULL)
+	{
+		if (pPre->data == data)
+			break;
+		pLoc = pPre;
+		pPre = pPre->next;
+	}
+	pLoc->next = pPre->next;
+	pList->count--;
+	free(pPre);
+}
+
+void destroyList(List *pList) {
+	ListNode *pDel = NULL, *pNext = NULL;
+	for (pDel = pList->head; pDel != NULL; pDel = pNext)
+	{
+		pNext = pDel->next; free(pDel);
+	}
+	free(pList);
+}
+
+bool traverseList(List *pList, int fromWhere, Element *pDataOut)
+{
+	if (fromWhere == 0 || pList->pos == NULL)
+		pList->pos = pList->head;
+	else
+		pList->pos = pList->pos->next;
+
+	if (pList->pos != NULL)
+	{
+		*pDataOut = pList->pos->data;
+		return 1;
+	}
+	else
+	{
+		*pDataOut = 0;
+		return 0;
+	}
+}
+int main()
+{
+	int pan, num, n = 0, data = 0, ret = 0;
+	bool pan2;
+	ListNode*pPre = NULL, *pLoc = NULL;
+	List *pList = createList();
+
+
+	do {
+		printf("In (0), Search (1), Out(2), Exit (3) : ");
+		scanf("%d", &pan);
+		switch (pan)
+		{
+		case 0:
+			printf("enter : ");
+			scanf("%d", &num);
+			Insert(pList, num);
+			break;
+		case 1:
+			printf("search : ");
+			scanf("%d", &num);
+
+			pan2 = search(pList, num);
+
+			if (pan2)
+				printf("%d is exist\n", num);
+			else
+				printf("%d isn't exist\n", num);
+
+			break;
+		case 2:
+			pPre = NULL, pLoc = NULL;
+			printf("Output : ");
+			scanf("%d", &num);
+
+			remove(pList, num);
+
+			printf("%d exits\n", num);
+			break;
+		case 3:
+			return 0;
+			break;
+		}
+
+		printf("Current Status of List : ");
+		do
+		{
+			ret = traverseList(pList, n++, &data);
+			if (ret)
+				printf("%d ", data);
+		} while (ret);
+		printf("\n");
+	} while (pan != 3);
+
+	destroyList(pList);
+
+	return 0;
+}

@@ -1,0 +1,49 @@
+#include <htc.h>
+__CONFIG(FOSC_XT & WDTE_OFF & PWRTE_OFF & BOREN_OFF & LVP_ON & WRT_OFF & DEBUG_ON & CPD_OFF & CP_OFF) ;
+
+#define _XTAL_FREQ 4000000  // 이 값 기준으로 딜레이 만듬
+
+
+void init(void)
+{
+	//port directions: 1=input, 0=output
+
+	TRISC = 0x00;
+	TRISB = 0b00000001;
+	TRISA = 0xFF;
+	ADCON1 = 0X07;
+	
+	T2CON=0b00000101;
+	CCP1CON = 0b00001111;
+	CCP2CON = 0b00001111;
+
+	
+	PR2 = 40; // 전체 주기
+	CCPR1L = 20; // 초기값 20(50%)
+	CCPR2L = 20; // 초기값 20(50%)	
+	
+}
+
+	
+void main()
+{
+	init();
+	
+	while(1){
+		
+	
+	
+		
+	 	CCPR1L += 4;
+	 	
+			if (CCPR1L > 40)
+			
+				CCPR1L = 0; 
+				
+		_delay(100000);
+				
+		    
+			
+	}	
+}	
+	

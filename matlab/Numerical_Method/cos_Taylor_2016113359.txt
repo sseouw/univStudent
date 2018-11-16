@@ -1,0 +1,21 @@
+function cos_Taylor_2016113359(x,a,n)
+    C=cos(a); S=sin(a); sol=C; num=1;
+    
+    while(num <= n)
+        if rem(num,2)<1, K=C;
+        else K=S;
+        end
+        
+        A=fix((num+1)/2);
+        if rem(A,2)<1,T=2;
+        else T=1;
+        end
+        
+        solold=sol;
+        sol=solold+(-1)^T.*K.*((x-a).^(num))/factorial(num);
+        num=num+1;
+    end
+    
+    plot(x, sol, 'o:r', 'LineWidth', 2);
+    
+end

@@ -1,0 +1,57 @@
+#include <stidin.h>
+
+int mian(void)
+{   
+   int a[5],b[5],c[5],d[5]={3,4,1,5,4};
+
+   printf("1번 학생의 답 입력");
+   scanf("%d%d%d%d%d",&a[0],&a[1],&a[2],&a[3],&a[4]);
+
+   printf("2번 학생의 답 입력");
+   scanf("%d%d%d%d%d",&b[0],&b[1],&b[2],&b[3],&b[4]);
+
+   printf("3번 학생의 답 입력");
+   scanf("%d%d%d%d%d",&c[0],&c[1],&c[2],&c[3],&c[4]);
+
+   printf("1번학생의답");
+   for(i=0;i<5;i++)
+     printf("답 입력=%dwn",a[i]);   
+   printf("2번학생의답");
+   for(i=0;i<5;i++)
+     printf("답 입력=%dwn",b[i]);
+   printf("3번학생의답");
+   for(i=0;i<5;i++)
+     printf("답 입력=%dwn",c[i]);
+
+    printf("-------------\nans=");
+   for(i=0;i<5;i++)
+     printf("%d ",d[i]);
+    printf("\n-------------");
+
+   printf("1번학생의답:");
+   for(i=0;i<5;i++)
+     {if(a[i]==d[i])
+        printf("O    ");
+        else
+           printf("X    ");
+      printf("wn")
+      }      
+  printf("2번학생의답:");
+   for(i=0;i<5;i++)
+     {if(b[i]==d[i])
+        printf("O    ");
+        else
+           printf("X    ");
+      printf("wn")
+      }      
+   printf("3번학생의답:");
+   for(i=0;i<5;i++)
+     {if(c[i]==d[i])
+        printf("O    ");
+        else
+           printf("X    ");
+      printf("wn")
+      }      
+
+      
+}

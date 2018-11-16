@@ -1,0 +1,659 @@
+;//header//////////////////////////
+PROCESSOR 16F876
+
+INDF	EQU	00H
+TMR0	EQU	01H
+PCL	EQU	02H
+STATUS	EQU	03H
+FSR	EQU	04H
+PORTA	EQU	05H
+PORTB	EQU	06H
+PORTC	EQU	07H
+PORTD	EQU	08H
+PORTE	EQU	09H
+PCLATH	EQU	0AH
+INTCON	EQU	0BH
+
+;/***************************/
+STATUS_TEMP	EQU	21H
+W_TEMP		EQU	22H
+
+INT_CNT		EQU	23H
+DISP_CNT	EQU	24H
+
+SEC_1		EQU	25H
+SEC_10		EQU	26H
+MIN_1		EQU	27H
+MIN_10		EQU	28H
+HOUR_1		EQU	29H
+HOUR_10	EQU	2AH ;시계에 쓰이는 변수
+
+A_MIN_1		EQU	30H
+A_MIN_10	EQU	31H
+A_HOUR_1	EQU	32H
+A_HOUR_10	EQU	33H ;알람 변수
+
+G_MIN_1		EQU	34H
+G_MIN_10	EQU	35H
+G_HOUR_1	EQU	36H
+G_HOUR_10	EQU	37H ;입력 변수
+
+DISP_A		EQU	38H
+PASS_C		EQU	39H
+
+DBUF1		EQU	60H
+DBUF2		EQU	61H
+DBUF3		EQU 	65H
+KEY_IN		EQU	62H
+DISP_B		EQU	63H
+SEG		EQU	64H
+;/****************************/
+
+; BANK 1
+OPTIONR	EQU	81H
+TRISA		EQU	85H
+TRISB		EQU	86H
+TRISC		EQU	87H
+TRISD		EQU	88H
+TRISE		EQU	89H
+ADCON1		EQU	9FH
+
+; STATUS BITS 
+IRP		EQU	7
+RP1		EQU	6
+RP0		EQU 	5
+NOT_TO		EQU 	4
+NOT_PD		EQU 	3
+ZF		EQU 	2
+DC		EQU 	1
+CF		EQU 	0
+;
+
+W		EQU	B'0'
+F		EQU 	.1
+
+
+
+	
+ORG 	0
+	GOTO 	START
+	
+;-------------------------------INTERRUPT----------------------------------
+	
+ORG		04H
+
+	MOVWF		W_TEMP		;분기전 파라미터 PUSH 역할
+	SWAPF		STATUS,W
+	MOVWF		STATUS_TEMP
+	
+	BCF		PORTB,7
+	
+	CALL		DISP			;시각 업데이트
+	
+	SWAPF 		STATUS_TEMP,W	;돌아올 때 파라미터 POP 역할
+	MOVWF		STATUS
+	SWAPF 		W_TEMP,F		
+	SWAPF		W_TEMP,W
+	BCF 		INTCON,2
+	RETFIE
+
+;-------------------------INTERRUPT 실행부분(디스플레이)------------------
+DISP	
+	INCF		DISP_CNT ;4자리 전부 나오게 하기위해
+	
+	BTFSC		DISP_CNT,1
+	GOTO		DISP_3OR4
+		
+	BTFSS		DISP_CNT,0
+	GOTO		DISP_10M
+	GOTO		DISP_1M
+
+DISP_3OR4
+	BTFSS		DISP_CNT,0
+	GOTO		DISP_10H
+	GOTO		DISP_1H	
+	
+DISP_1M
+	BSF		PORTB, 1
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3
+	;----------------------------------분단위,스위치1이 눌리면 초 단위 
+	BTFSS		PORTB,3
+	MOVF		SEC_1,W
+	BTFSC		PORTB,3
+	MOVF		MIN_1, W
+	CALL		SHOW
+	;---------------------------------	
+	BCF		PORTB,1
+		
+	RETURN
+
+DISP_10M
+	BSF		PORTB, 1
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3
+	;---------------------------------10분단위,스위치1이 눌리면 10초 단위 	
+	BTFSS		PORTB,3
+	MOVF		SEC_10,W
+	BTFSC		PORTB,3
+	MOVF		MIN_10,W
+	CALL		SHOW
+	;-----------------------	
+	BCF		PORTB,2
+	
+	INCF		INT_CNT
+	
+	RETURN
+	
+DISP_1H
+	BSF		PORTB, 1
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3
+	;----------------------------------시간단위,스위치1이 눌리면 분단위
+	BTFSS		PORTB,3
+	MOVF		MIN_1,W
+	BTFSC		PORTB,3
+	MOVF		HOUR_1,W
+	CALL		SHOW
+
+	;BLINK DG4 DOT AT 0.5 SEC	
+	BTFSS		INT_CNT,6	
+	BSF		PORTA, 0
+	BTFSC		INT_CNT,6
+	BCF		PORTA, 0
+	;-----------------------	
+	BCF		PORTA,2
+	
+	RETURN	
+
+DISP_10H
+	BSF		PORTB, 1
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3
+	;---------------------------------10시간단위,스위치1이 눌리면 10분단위	
+	BTFSS		PORTB,3
+	MOVF		MIN_10,W
+	BTFSC		PORTB,3
+	MOVF		HOUR_10,W
+	CALL		SHOW
+	;-----------------------	
+	BCF		PORTA,3
+	
+	RETURN
+	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
+
+;--------------------------------- MAIN PROGRAM---------------------------
+
+;초기 설정
+START
+	BSF		STATUS,RP0 	;bank1
+
+	MOVLW		B'00000111'
+	MOVWF		ADCON1
+	MOVLW		B'00000000'
+	MOVWF		TRISA
+	MOVLW		B'00111000'
+	MOVWF		TRISB
+	MOVLW		B'00000000'
+	MOVWF		TRISC
+
+	MOVLW		B'00000010'	;interrupt 시간설정 2.048msec
+	MOVWF		OPTIONR
+
+	BCF		STATUS,RP0	;bank0
+	BSF		INTCON,5	;TIMER INTR ENABLE
+	BSF		INTCON,7	;GLOBAL INTR ENABLE
+	
+;초기화	
+INIT
+	MOVLW		B'00011100'
+	MOVWF		PORTA
+	MOVLW 		B'00111110'
+	MOVWF		PORTB
+	MOVLW		B'00000000'
+	MOVWF		PORTC
+	
+	MOVLW		0
+	MOVWF		INT_CNT
+	MOVWF		DISP_CNT
+	MOVWF		PASS_C
+	
+	MOVWF		SEC_1
+	MOVWF		SEC_10
+;---------------11시59분으로 --------------------------
+	MOVLW		.9	
+	MOVWF		MIN_1
+	MOVLW		.5
+	MOVWF		MIN_10
+	MOVLW		.1
+	MOVWF		HOUR_1
+	MOVWF		HOUR_10
+	
+	MOVLW		0FFH
+	MOVWF		DISP_A
+	MOVWF		DISP_B
+	MOVWF		KEY_IN
+	
+	MOVWF		A_MIN_1
+	MOVWF		A_MIN_10
+	MOVWF		A_HOUR_1
+	MOVWF		A_HOUR_10
+
+;-------------MAIN START----------------------	
+MAIN
+	CALL		ISON ;알람 확인
+	
+	BTFSS		PORTB,4 ;스위치2(설정) 눌려짐 확인
+	GOTO		GETKEY
+	BTFSS		PORTB,5 ;스위치3(알람 끄기) 눌려짐 확인
+	GOTO		LED3
+
+;------------알람&각 스위치 눌려짐 확인후 CLOCK-----------
+NEXT	
+	MOVLW		.125
+	SUBWF		INT_CNT,W
+	BTFSS		STATUS,ZF
+	GOTO		MAIN
+	
+	CLRF		INT_CNT		;;SEC
+	INCF		SEC_1
+	MOVLW		.10
+	SUBWF		SEC_1,W
+	BTFSS		STATUS,ZF
+	GOTO 		MAIN
+	
+	CLRF		SEC_1
+	INCF		SEC_10
+	MOVLW		.6		
+	SUBWF		SEC_10,W
+	BTFSS		STATUS,ZF
+	GOTO		MAIN
+	
+	CLRF		SEC_10		;;MIN
+	INCF		MIN_1
+	MOVLW		.10
+	SUBWF		MIN_1,W
+	BTFSS		STATUS,ZF
+	GOTO 		MAIN
+	
+	CLRF		MIN_1
+	INCF		MIN_10
+	MOVLW		.6
+	SUBWF		MIN_10,W
+	BTFSS		STATUS,ZF
+	GOTO		MAIN
+	
+	CLRF		MIN_10		;;HOUR
+	INCF		HOUR_1
+	MOVLW		.10
+	SUBWF		HOUR_1,W
+	BTFSS		STATUS,ZF
+	GOTO 		MAIN
+	
+	CLRF		HOUR_1
+	INCF		HOUR_10
+	MOVLW		.10
+	SUBWF		HOUR_10,W
+	BTFSC		STATUS,ZF
+	CLRF		HOUR_10
+	GOTO 		MAIN
+
+;--------------스위치2가 눌렸다면------------------------------------
+GETKEY
+	BSF		PCLATH,3		;PAGE 1
+	GOTO		GET_KEY
+
+;---------------알람 확인, 현재 시각과 저장된 A_TIMES 비교--------------
+ISON
+	MOVF		A_HOUR_10,W
+	SUBWF		HOUR_10,W
+	BTFSS		STATUS,Z
+	GOTO		OFF
+	
+	MOVF		A_HOUR_1,W
+	SUBWF		HOUR_1,W
+	BTFSS		STATUS,ZF
+	GOTO		OFF
+	
+	MOVF		A_MIN_10,W
+	SUBWF		MIN_10,W
+	BTFSS		STATUS,ZF
+	GOTO		OFF
+	
+	MOVF		A_MIN_1,W
+	SUBWF		MIN_1,W
+	BTFSS		STATUS,ZF
+	GOTO		OFF
+	
+	GOTO		ON
+
+;---------버저 ON/OFF------------	
+ON
+	BCF		PORTA,4
+	RETURN
+OFF
+	BSF		PORTA,4
+	RETURN
+
+;--------스위치 3이 눌려졌다면
+LED3		
+	BSF		INTCON,7	
+	MOVLW		B'10000110'
+	MOVWF		PORTB
+	MOVLW		B'00011100'
+	MOVWF		PORTA
+	MOVLW		B'11000000'
+	MOVWF		PORTC
+	
+	MOVLW		0FFH
+	MOVWF		A_HOUR_10	;알람 끄기 
+	
+	GOTO		MAIN		
+			
+
+;----------------------------------------------------------
+SHOW
+	CALL		CONV
+	MOVWF		SEG
+	MOVF		SEG,W
+	ANDLW		B'11100111'
+	MOVWF		PORTC
+	
+	BTFSC		SEG, 4
+	BSF		PORTA, 1
+	BTFSS		SEG, 4
+	BCF		PORTA, 1
+	
+	BTFSC		SEG, 3
+	BSF		PORTA, 0
+	BTFSS		SEG, 3
+	BCF		PORTA, 0
+	RETURN		
+CONV 
+	ANDLW		0FH
+	ADDWF		PCL, F
+	
+	RETLW		B'11100111';0
+	RETLW		B'01100000';1
+	RETLW		B'11010011';2
+	RETLW		B'11110010';3
+	RETLW		B'01110100';4
+	RETLW		B'10110110';5
+	RETLW		B'10110111';6
+	RETLW		B'11100100';7
+	RETLW		B'11110111';8
+	RETLW		B'11110110';9
+	RETLW		B'00010011';C
+	RETLW		B'00000000';
+	RETLW		B'00010011';c
+	RETLW		B'00001000';.
+	RETLW		B'10010111';E
+	RETLW		B'10010101';F
+DELAY
+	MOVLW		.255
+	MOVWF		DBUF1
+DLP1	MOVLW		.255
+	MOVWF		DBUF2
+DLP2	NOP
+	DECFSZ		DBUF2,F
+	GOTO		DLP2
+	DECFSZ		DBUF1,F
+	GOTO		DLP1
+	RETURN
+	
+
+;-------------------SUB 기능들-----------------------
+ORG	800H
+
+GET_KEY
+	MOVLW		0FFH
+	MOVWF		KEY_IN
+	
+	BCF		INTCON,7
+	BCF		INTCON,5
+
+	BCF		PORTB, 1	;DG4에 표시 
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3
+PUSH_LP;스위치2 눌려짐 확인
+	BTFSC		PORTB,4
+	GOTO		PUSH_LP
+;스위치 2가 눌려지면 GO
+GET_KEY_LP	
+	INCF		KEY_IN
+	MOVF		KEY_IN,W
+	SUBLW		04H
+	BTFSC		STATUS,ZF
+	CLRF		KEY_IN	;KEY_IN을 0으로
+	
+	MOVF		KEY_IN,W	
+	CALL		SHOW2
+	CALL		DELAY2
+	BTFSS		PORTB,4
+	GOTO		GET_KEY_LP	;누르면 계속 숫자 UP
+
+;---------------------손을 때면 분기-------
+	MOVLW		.1	;1이면 CLEAR TIME
+	SUBWF		KEY_IN,W
+	BTFSC		STATUS,ZF
+	GOTO		CLR_TIME
+		
+	MOVLW		.2	;TIME SETTING
+	SUBWF		KEY_IN,W
+	BTFSC		STATUS,ZF
+	GOTO		SET_TIME
+	
+	MOVLW		.3	;ALARM SETTING
+	SUBWF		KEY_IN,W
+	BTFSC		STATUS,ZF
+	GOTO		SET_TIME	
+
+;----------------------시간 초기화 (00:00:00)----------------------------------------------
+CLR_TIME
+	CLRF		HOUR_10
+	CLRF		HOUR_1
+	CLRF		MIN_10
+	CLRF		MIN_1
+	CLRF		SEC_10
+	CLRF		SEC_1
+
+	GOTO		NOACTION
+
+;--------------------시간&알람 설정--------------------------------------------------------
+SET_TIME
+	MOVLW		0FFH
+	MOVWF		DISP_A
+		
+	CLRF		PASS_C
+	BSF		PORTB, 1		
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3 ;SEG4자리 전부 OFF
+	
+LP	BTFSC		PORTB,4
+	GOTO		LP
+
+	MOVF		PASS_C,W
+	ANDLW		03H
+	ADDWF		PCL,F
+	GOTO		DG1
+	GOTO		DG2
+	GOTO		DG3
+	GOTO		DG4
+
+;-------각 자릿수 ON후 LP2 루틴으로-------
+DG1		
+	BSF		PORTB, 1		
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BCF		PORTA, 3
+	GOTO		LP2		
+DG2		
+	BSF		PORTB, 1	
+	BSF		PORTB, 2
+	BCF		PORTA, 2	
+	BSF		PORTA, 3
+	GOTO		LP2
+DG3		
+	BSF		PORTB, 1	
+	BCF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3
+	GOTO		LP2
+DG4		
+	BCF		PORTB, 1	
+	BSF		PORTB, 2
+	BSF		PORTA, 2
+	BSF		PORTA, 3
+	GOTO		LP2
+
+;------스위치2 계속 누르면 각 자릿수 증가--------------- 
+LP2
+	INCF		DISP_A
+	MOVF		DISP_A,W
+	SUBLW		0AH
+	BTFSC		STATUS,ZF
+	CLRF		DISP_A
+
+	MOVF		DISP_A,W
+	CALL		SHOW2
+	CALL		DELAY2
+	
+	BTFSS		PORTB,4
+	GOTO		LP	;누르면 계속 숫자 UP
+
+	MOVF		PASS_C,W
+	ANDLW		03H
+	ADDWF		PCL,F
+	GOTO		SS_1
+	GOTO		SS_2
+	GOTO		SS_3
+	GOTO		SS_4
+
+;-----------각 자리수 G_TIMES에 입력---------------------
+SS_1	MOVF		DISP_A,W
+	MOVWF		G_HOUR_10
+	GOTO		LP3
+SS_2	MOVF		DISP_A,W
+	MOVWF		G_HOUR_1
+	GOTO		LP3
+SS_3	MOVF		DISP_A,W
+	MOVWF		G_MIN_10
+	GOTO		LP3
+
+LP3	INCF		PASS_C
+	MOVLW		0FFH
+	MOVWF		DISP_A
+	GOTO		LP
+;----------------------끝자리 설정후 분기------------------------
+SS_4	
+	MOVF		DISP_A,W
+	MOVWF		G_MIN_1
+	
+	
+	MOVLW		.2
+	SUBWF		KEY_IN,W
+	BTFSC		STATUS,ZF
+	GOTO		SETTING_TIME	;KEY_IN이 2였으면 TIME  SETTING
+	GOTO		SETTING_ALARM	;KEY_IN이 3였으면 ALARM SETTING
+
+;--------G_TIMES를 분기에 따라 TIMES 나 A_TIMES에 넣어줌
+
+SETTING_TIME;---시간 설정해주고 초단위는 초기화
+	MOVF		G_HOUR_10,W
+	MOVWF		HOUR_10
+	MOVF		G_HOUR_1,W
+	MOVWF		HOUR_1
+	MOVF		G_MIN_10,W
+	MOVWF		MIN_10
+	MOVF		G_MIN_1,W
+	MOVWF		MIN_1
+	
+	CLRF		SEC_10
+	CLRF		SEC_1
+
+	GOTO		NOACTION
+	
+SETTING_ALARM;----알람 설정
+	MOVF		G_HOUR_10,W
+	MOVWF		A_HOUR_10
+	MOVF		G_HOUR_1,W
+	MOVWF		A_HOUR_1
+	MOVF		G_MIN_10,W
+	MOVWF		A_MIN_10
+	MOVF		G_MIN_1,W
+	MOVWF		A_MIN_1
+	
+	GOTO		NOACTION
+		
+;----------------------------------------------------------------------------------------		
+NOACTION
+	BSF		INTCON,5
+	BSF		INTCON,7
+	
+	BCF		PCLATH,3
+	GOTO		MAIN
+;----------------------------------------------------------------------------------------
+SHOW2
+	CALL		CONV2
+	MOVWF		SEG
+	MOVF		SEG,W
+	ANDLW		B'11100111'
+	MOVWF		PORTC
+	
+	BTFSC		SEG, 4
+	BSF		PORTA, 1
+	BTFSS		SEG, 4
+	BCF		PORTA, 1
+	
+	BTFSC		SEG, 3
+	BSF		PORTA, 0
+	BTFSS		SEG, 3
+	BCF		PORTA, 0
+	RETURN		
+CONV2
+	ANDLW		0FH
+	ADDWF		PCL, F
+	
+	RETLW		B'11100111';0
+	RETLW		B'01100000';1
+	RETLW		B'11010011';2
+	RETLW		B'11110010';3
+	RETLW		B'01110100';4
+	RETLW		B'10110110';5
+	RETLW		B'10110111';6
+	RETLW		B'11100100';7
+	RETLW		B'11110111';8
+	RETLW		B'11110110';9
+	RETLW		B'00010011';C
+	RETLW		B'00000000';
+	RETLW		B'00010011';c
+	RETLW		B'00001000';.
+	RETLW		B'10010111';E
+	RETLW		B'10010101';F
+;---------------------딜레이------------------------------------------------------
+DELAY2
+	MOVLW		.2
+	MOVWF		DBUF1
+DLP11	
+	MOVLW 		.255
+	MOVWF 		DBUF2
+DLP12	MOVLW		.255
+	MOVWF		DBUF3
+DLP22	NOP
+	DECFSZ		DBUF3,F
+	GOTO		DLP22
+	DECFSZ		DBUF2,F
+	GOTO		DLP12
+	DECFSZ 		DBUF1,F
+	GOTO  		DLP11
+	RETURN	
+	
+		
+END

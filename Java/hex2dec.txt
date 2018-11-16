@@ -1,0 +1,33 @@
+import java.util.Scanner;
+public class HW12_1{
+public static void main(String[]args){
+	Scanner input = new Scanner(System.in);
+	System.out.print("Enter a hex number: ");
+	String h = input.nextLine();
+
+	System.out.println("(hex) "+h+" = (dec) "+hexToDec(h.toUpperCase()));
+}
+
+	public static int hexToDec(String hStr) {
+		int i, d, n = hStr.length();
+		for(i=d=0; i<n; i++)
+		d = d*16 + hexCharToDec(hStr.charAt(i));
+		return d;
+	}
+
+	public static int hexCharToDec(char ch){
+		if(ch>='0'&&ch<='9')
+		return ch-'0';
+		try{
+		if(ch <'A' || ch > 'F')
+		{throw new illegal();
+		}return 10 + ch - 'A';
+		}catch(illegal ex){System.err.println("illegal character: "+ch);
+System.exit(0);}
+		
+		return ch-'0';
+		
+	}
+public static class illegal extends  Exception {
+}
+}

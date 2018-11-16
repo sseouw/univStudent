@@ -1,0 +1,66 @@
+#include <htc.h>
+
+int counter=0;
+int int_cnt=0;
+unsigned char digit10=0; 
+unsigned char digit01=0; 
+volatile const unsigned char digit[10]= 
+{0xC0,0xF9,0xA4,0xB0,0x99,0x92,0x82,0xD8,0x80,0x90};
+
+void interrupt isr(void){
+	if((TMR0IE)&&(TMR0IF)){
+		counter++;
+		
+		if(counter%2==0)
+		{
+			RB0=0;
+			PORTC=digit[digit10];
+			RB1=1;
+		}
+		else
+		{
+			RB1=0;
+			PORTC=digit[digit01];
+			RB0=1;
+			int_cnt++;
+		}
+		TMR0IF=0;
+	}
+}
+
+void init(void) {
+	TRISC=0x00;
+	TRISB=0x00;
+	TRISA=0x01;
+	ADCON1=0x07;
+	TMR0IE=1;
+	OPTION_REG=0B10000010;
+}
+
+void main(void) {
+	init();
+	ei();
+
+	while (1){
+		if(RA0==0)
+		{
+			digit10=0;
+			digit01=0;
+		}
+				
+		if(int_cnt==250)
+		{
+			int_cnt=0;
+			digit01++;
+			if(digit01==10)
+			{
+				digit01=0;
+				digit10++;
+				if(digit10==6)
+					digit10=0;
+			}
+			
+		
+		}
+	}
+}

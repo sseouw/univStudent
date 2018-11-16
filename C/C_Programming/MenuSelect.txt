@@ -1,0 +1,69 @@
+  #include <stdio.h>
+
+int print_menu(int a)
+{
+	if(a<=3)
+		printf("1. 햄버거\n2. 치즈버거\n3.샌드위치\n4. 종료\n");
+
+
+	printf("원하는 메뉴를 선택하세요: ");
+	
+	check_menu(a);
+
+	return 0;
+}
+
+int hamburger(int a)
+{
+	if(a==1)
+		printf("햄버거를 선택하셨습니다"\n);
+	print_menu(a);
+}
+int cheezeburger(int a)
+{
+	if(a==2)
+		printf("치즈버거를 선택하셨습니다"\n);
+	print_menu(a);
+}
+int sandwich(int a)
+{
+	if(a==3)
+		printf("샌드위치를 선택하셨습니다"\n);
+	print_menu(a);
+}
+int check_menu(int a)
+{
+	int num,b;
+	scanf("%d", &num);
+	b=num;
+
+	switch(num)
+
+		case 1 :
+			hamburger(b)
+			break;
+	
+		case 2 :
+			cheezeburger(b)
+			break;
+	
+		case 3 :
+			sandwitch(b)
+			break;	
+
+		case 4 :
+			return 0;
+			break;
+
+		default :
+			print_menu(a);
+			break;
+}
+
+int main(void)
+{
+	int a=0;
+	print_menu(a);
+
+	return 0;
+}
