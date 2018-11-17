@@ -1,5 +1,5 @@
 # univStudent
-***
+
 ## 1.개요
  2016년도부터 2018년도까지의 강의에서 C,JAVA,assembly,HTML,matlab등 다양한 언어로 수행한 과제의 일부를 모아놓은 곳입니다.
 ***
