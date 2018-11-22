@@ -1,0 +1,43 @@
+function [eig_val, eig_vec]=power_2016113359(A,es,maxit)
+    [row,col]=size(A);branch=0;num=0;
+    if(row==col)
+        if(min(min(A==A')'))
+            branch=input('selet(maxValue=1,minValue=2):');
+        else
+            error('this function needs symmetric matrix')
+        end
+    else
+        error('this function needs square matrix')
+    end
+    
+    sol=ones(row,1);lamb=0;
+    if(branch==2)
+        A=inv(A);
+    end
+    
+    while(num < maxit)
+        oldlamb=lamb;
+        oldsol=sol;
+        sol=A*oldsol;
+        lamb=sol(1,1);
+        for i=2:row
+            if(abs(lamb)<abs(sol(i,1)))
+                lamb=sol(i,1);
+            end
+        end
+        sol=sol/lamb;
+        e=(lamb-oldlamb)/lamb;
+        e=abs(e)*100;
+        if(e<es)
+            break;
+        end
+        num=num+1;
+    end
+    
+    switch branch
+        case 1
+            eig_val=lamb;eig_vec=sol; 
+        case 2
+            eig_val=1/lamb;eig_vec=sol;
+    end
+end
